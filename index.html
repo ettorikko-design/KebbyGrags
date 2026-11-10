@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Gregs: Il Ritorno del Kebab</title>
+    
+    <!-- CONFIGURAZIONE ICONE E APP -->
+    <link rel="manifest" href="site.webmanifest">
+    <meta name="theme-color" content="#E91E63">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Gregs">
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800&display=swap" rel="stylesheet">
+
+    <style>
+        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; touch-action: none; }
+        
+        html, body {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background: #2c3e50; overflow: hidden; position: fixed;
+            font-family: 'Poppins', sans-serif; color: #fff;
+        }
+
+        #game-wrapper {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            height: 100dvh; overflow: hidden;
+        }
+
+        canvas { display: block; width: 100%; height: 100%; }
+
+        /* HUD */
+        #hud {
+            position: absolute; top: 0; left: 0; width: 100%;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 15px; font-size: 16px; font-weight: 800;
+            background: linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%);
+            z-index: 5; flex-wrap: wrap; gap: 8px; pointer-events: none;
+            padding-top: max(12px, env(safe-area-inset-top));
+        }
+        .hud-box { 
+            background: rgba(0,0,0,0.6); padding: 6px 12px; 
+            border-radius: 20px; border: 2px solid rgba(255,255,255,0.4);
+            display: flex; align-items: center; gap: 8px; text-shadow: 1px 1px 0 #000;
+        }
+        #weapon-box { color: #FFD700; border-color: rgba(255, 215, 0, 0.6); }
+        #kill-box { color: #FF6B6B; border-color: rgba(255, 107, 107, 0.6); }
+        #timer-box { color: #00FFCC; border-color: rgba(0, 255, 204, 0.6); display: none; }
+        #shield-box { color: #45B7D1; border-color: rgba(69, 183, 209, 0.6); display: none; }
+
+        /* Controlli Touch Ingranditi */
+        #mobile-controls {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 4;
+            padding-bottom: max(25px, env(safe-area-inset-bottom)); 
+        }
+        
+        #joystick-zone {
+            position: absolute; bottom: 25px; left: 25px;
+            width: 140px; height: 140px; border-radius: 50%;
+            background: rgba(255,255,255,0.2); border: 4px solid rgba(255,255,255,0.5);
+            display: flex; justify-content: center; align-items: center;
+            pointer-events: auto; backdrop-filter: blur(4px);
+        }
+        #joystick-knob {
+            width: 65px; height: 65px; border-radius: 50%;
+            background: linear-gradient(135deg, #fff, #ddd);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5); position: absolute;
+        }
+        
+        .action-buttons { 
+            position: absolute; bottom: 25px; right: 25px;
+            display: flex; gap: 20px; align-items: flex-end;
+            pointer-events: auto;
+        }
+        .ctrl-btn {
+            width: 90px; height: 90px; font-size: 16px; font-family: 'Poppins', sans-serif; font-weight: 800;
+            border-radius: 50%; border: 4px solid #fff; 
+            color: white; display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.4); transition: 0.1s;
+            text-shadow: 2px 2px 0 #000;
+        }
+        .ctrl-btn:active { transform: scale(0.85); }
+        .ctrl-btn.jump { background: #3498DB; }
+        .ctrl-btn.action { background: #E74C3C; width: 115px; height: 90px; border-radius: 25px; font-size: 20px; }
+
+        /* Overlay e Menu */
+        #overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(44, 62, 80, 0.95); backdrop-filter: blur(10px);
+            display: flex; flex-direction: column; justify-content: center; align-items: center; 
+            z-index: 10; text-align: center; overflow-y: auto; padding: 20px;
+        }
+        #overlay h1 { font-size: 55px; margin: 0 0 5px 0; font-weight: 800; color: #FFD93D; text-shadow: 3px 3px 0 #C0392B, 0 0 20px rgba(255,217,61,0.5); letter-spacing: 2px; animation: floatText 3s infinite ease-in-out; }
+        @keyframes floatText { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        #overlay p { font-size: 18px; color: #eee; margin: 5px; font-weight: 600; }
+        
+        .menu-card {
+            background: rgba(255, 255, 255, 0.1); border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 20px; padding: 25px; width: 100%; max-width: 400px;
+            display: flex; flex-direction: column; align-items: center;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4); margin-top: 20px;
+        }
+
+        .btn {
+            padding: 15px 20px; font-size: 18px; font-family: 'Poppins', sans-serif; font-weight: 800;
+            background: #E91E63; color: #fff;
+            border: 2px solid #fff; border-radius: 12px; cursor: pointer; margin: 8px 0; 
+            width: 100%; max-width: 280px; text-transform: uppercase;
+            box-shadow: 0 6px 0 #880E4F; transition: all 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-origin: center;
+        }
+        .btn:hover { transform: scale(1.05); box-shadow: 0 8px 0 #880E4F; }
+        .btn:active { transform: scale(0.95) translateY(4px); box-shadow: 0 2px 0 #880E4F; }
+        
+        .btn-secondary { background: #7F8C8D; box-shadow: 0 6px 0 #2C3E50; }
+        .btn-secondary:active { box-shadow: 0 2px 0 #2C3E50; }
+        .btn-dev { background: #27AE60; box-shadow: 0 6px 0 #145A32; font-size: 14px; padding: 12px 20px; }
+        .btn-dev:active { box-shadow: 0 2px 0 #145A32; }
+
+        #overlay input {
+            padding: 15px; font-size: 16px; font-family: 'Poppins', sans-serif; font-weight: 600;
+            background: rgba(0,0,0,0.4); color: #FFF;
+            border: 2px solid rgba(255,255,255,0.3); border-radius: 10px;
+            width: 100%; max-width: 280px; margin: 10px 0;
+        }
+
+        #hint-text { color: #FFD93D; font-size: 14px; margin-top: 10px; font-weight: 600; }
+        #message-box { color: #FFF; font-size: 14px; margin: 5px 0; padding: 5px; font-weight: 600; }
+        
+        .time-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 280px; margin-top: 15px; }
+        .time-btn { padding: 12px; font-size: 16px; font-family: 'Poppins', sans-serif; font-weight: 800; background: rgba(0,0,0,0.3); color: #FFF; border: 2px solid rgba(255,255,255,0.3); border-radius: 10px; cursor: pointer; transition: 0.1s; }
+        .time-btn:hover { transform: scale(1.05); }
+        .time-btn:active { transform: scale(0.95); }
+        .time-btn.selected { background: #3498DB; border-color: #FFF; box-shadow: 0 0 15px #3498DB; }
+        
+        #reward-info { margin-top: 15px; font-size: 14px; color: #00FFCC; min-height: 40px; font-weight: 600; }
+        .hidden { display: none !important; }
+
+        /* Schermata Finale (Vittoria) */
+        #win-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, rgba(255,215,0,0.9) 0%, rgba(0,0,0,0.95) 100%);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 20; text-align: center; padding: 20px;
+        }
+        #win-screen h1 { font-size: 60px; font-weight: 800; color: #FFF; text-shadow: 0 0 20px #FFD700, 4px 4px 0 #000; animation: popIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) both; }
+        @keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+        #win-screen p { font-size: 24px; color: #FFF; font-weight: 600; text-shadow: 2px 2px 0 #000; margin-bottom: 30px; }
+
+        #rotate-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: #2c3e50; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px;
+        }
+        #rotate-overlay .icon { font-size: 70px; margin-bottom: 15px; animation: rotateAnim 2s infinite ease-in-out; }
+        @keyframes rotateAnim { 0% { transform: rotate(0deg); } 50% { transform: rotate(90deg); } 100% { transform: rotate(0deg); } }
+
+        @media (max-width: 600px) {
+            #overlay h1 { font-size: 45px; }
+            #joystick-zone { width: 110px; height: 110px; bottom: 15px; left: 15px; }
+            #joystick-knob { width: 50px; height: 50px; }
+            .action-buttons { bottom: 15px; right: 15px; gap: 10px; }
+            .ctrl-btn { width: 75px; height: 75px; font-size: 13px; }
+            .ctrl-btn.action { width: 95px; height: 75px; font-size: 16px; }
+            #hud { padding: 8px 10px; font-size: 13px; }
+            .hud-box { padding: 4px 8px; }
+            #win-screen h1 { font-size: 40px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="rotate-overlay">
+        <div class="icon">📱</div>
+        <h2 style="color: #FFD700; font-size: 24px; margin-bottom: 10px;">Ruota il telefono!</h2>
+        <p style="color: #fff; max-width: 300px; font-size: 16px; font-weight:600;">Per giocare al meglio, ruota lo schermo in orizzontale.</p>
+        <button class="btn" style="max-width: 200px; margin-top: 20px;" onclick="document.getElementById('rotate-overlay').style.display='none'">HO CAPITO</button>
+    </div>
+
+    <div id="game-wrapper">
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="hud">
+            <div class="hud-box">❤️ <span id="lives">3</span></div>
+            <div class="hud-box" id="weapon-box">🔫 <span id="weapon-name">PICCANTE</span> <span id="ammo">(8)</span></div>
+            <div class="hud-box" id="kill-box">💀 <span id="kills">0</span>/5</div>
+            <div class="hud-box" id="timer-box">⏱️ <span id="timer">3:00</span></div>
+            <div class="hud-box" id="shield-box">🛡️ <span id="shield-timer">15</span>s</div>
+        </div>
+
+        <div id="mobile-controls">
+            <div id="joystick-zone">
+                <div id="joystick-knob"></div>
+            </div>
+            <div class="action-buttons">
+                <button id="btnAction" class="ctrl-btn action">SPARA</button>
+                <button id="btnJump" class="ctrl-btn jump">SALTA</button>
+            </div>
+        </div>
+
+        <div id="overlay">
+            <h1>GREGS</h1>
+            <p>Il Ritorno del Kebab</p>
+            
+            <div id="menu-content" class="menu-card">
+                <button class="btn" onclick="startGame(false)">GIOCA ORA</button>
+                <button class="btn btn-dev" onclick="showDevMenu()" style="margin-top: 15px;">MODALITÀ SVILUPPATORE</button>
+                <div id="dev-reward-active" class="hidden" style="margin-top:15px; color:#00FFCC; font-weight:800; font-size: 14px; text-shadow: 1px 1px 0 #000;"></div>
+            </div>
+
+            <div id="dev-content" class="menu-card hidden">
+                <p style="color: #00FFCC; font-size: 20px; font-weight: 800;">Area Riservata</p>
+                <input type="password" id="dev-password" placeholder="Password..." onkeydown="if(event.key==='Enter') checkDevPassword()">
+                <div id="message-box"></div>
+                <div id="hint-text"></div>
+                <button class="btn" onclick="checkDevPassword()">ACCEDI</button>
+                <button class="btn btn-secondary" onclick="hideDevMenu()">ANNULLA</button>
+            </div>
+            
+            <div id="dev-time-menu" class="menu-card hidden">
+                <p style="color: #00FFCC; font-size: 20px; font-weight: 800;">Scegli la sfida</p>
+                <div class="time-options">
+                    <button class="time-btn" onclick="selectDevTime(3, event)">3 MIN</button>
+                    <button class="time-btn" onclick="selectDevTime(5, event)">5 MIN</button>
+                    <button class="time-btn" onclick="selectDevTime(7, event)">7 MIN</button>
+                    <button class="time-btn" onclick="selectDevTime(10, event)">10 MIN</button>
+                </div>
+                <div id="reward-info"></div>
+                <button class="btn" style="margin-top:15px;" onclick="startDevGame()">AVVIA SFIDA</button>
+                <button class="btn btn-secondary" onclick="hideDevMenu()">INDIETRO</button>
+            </div>
+        </div>
+
+        <!-- SCHERMATA FINALE A TUTTO SCHERMO -->
+        <div id="win-screen" class="hidden">
+            <h1>COMPLIMENTI!</h1>
+            <p>Hai sconfitto tutti i nemici e salvato l'Italia!</p>
+            <p style="font-size: 18px; color: #FFD700;">Sei un vero Kebab Hero.</p>
+            <button class="btn" style="max-width: 250px; margin-top: 20px;" onclick="location.reload()">RIGIOCA</button>
+        </div>
+    </div>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(err => console.log('SW registration failed:', err));
+        }
+
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > window.innerHeight) document.getElementById('rotate-overlay').style.display = 'none';
+        });
+        if (window.innerWidth > window.innerHeight) document.getElementById('rotate-overlay').style.display = 'none';
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let gameState = 'START'; 
+        let lives = 3, currentLevelIndex = 0;
+        let cameraX = 0, frameCount = 0, screenShake = 0;
+        
+        let devMode = false, devTimer = 0, devTimerInterval = null;
+        let devChosenTime = 0, devReward = null, rewardActiveTimer = 0, shieldTimer = 0;
+        let currentPower = 'PICCANTE', ammo = 8, maxAmmo = 15;
+        let hasRutto = false, hasYogurt = false, hasPizza = false;
+        
+        let kills = 0, killsRequired = 5; 
+
+        let joystick = { active: false, dx: 0, dy: 0, maxDist: 45 };
+        const keys = { left: false, right: false, jump: false, action: false };
+
+        const BASE_HEIGHT = 600; 
+        let scaleRatio = 1;
+        let viewWidth = 1200; 
+
+        let player = { 
+            x: 150, y: 300, w: 40, h: 60, vx: 0, vy: 0, 
+            speed: 7, jumpPower: -15, grounded: false, 
+            facing: 1, invulnerable: 0, aimAngle: 0, shootCooldown: 0,
+            walkCycle: 0 
+        };
+        let entities = [], projectiles = [], eProjectiles = [], particles = [];
+        let levelWidth = 0, levelFlag = null, spawnTimer = 0, enemiesOnScreen = 0;
+        let gateOpen = false, gateX = 0;
+        let gameEndingTimer = 0; 
+
+        const levels = [
+            { name: "ROMA", sky: "#4db8ff", ground: "#e6b85c", bg: "colosseo", width: 5000 },
+            { name: "FIRENZE", sky: "#ffb3d9", ground: "#d9a05b", bg: "duomo", width: 5000 },
+            { name: "PISA", sky: "#a6d8ff", ground: "#e0c090", bg: "torre", width: 5000 },
+            { name: "MILANO", sky: "#b3c6ff", ground: "#a0a8b0", bg: "duomo_mi", width: 5000 },
+            { name: "TORINO", sky: "#ffe6b3", ground: "#c0b0a0", bg: "mole", width: 5000 },
+            { name: "VENEZIA", sky: "#80e6d9", ground: "#60b080", bg: "canali", width: 5000 },
+            { name: "BOLOGNA", sky: "#ffd9b3", ground: "#d0a070", bg: "torri_bo", width: 5000 },
+            { name: "NAPOLI", sky: "#ff9955", ground: "#666666", bg: "vesuvio", width: 4000 }
+        ];
+
+        let devAttempts = 0;
+        const correctPassword = "Gregs è il migliore";
+
+        window.showDevMenu = function() {
+            document.getElementById('menu-content').classList.add('hidden');
+            document.getElementById('dev-content').classList.remove('hidden');
+            document.getElementById('dev-password').value = '';
+            document.getElementById('message-box').innerText = '';
+            document.getElementById('hint-text').innerText = '';
+        }
+        window.hideDevMenu = function() {
+            document.getElementById('dev-content').classList.add('hidden');
+            document.getElementById('dev-time-menu').classList.add('hidden');
+            document.getElementById('menu-content').classList.remove('hidden');
+        }
+        window.checkDevPassword = function() {
+            const pwd = document.getElementById('dev-password').value.trim();
+            const msgBox = document.getElementById('message-box');
+            const hintBox = document.getElementById('hint-text');
+            if (pwd === correctPassword) {
+                document.getElementById('dev-content').classList.add('hidden');
+                document.getElementById('dev-time-menu').classList.remove('hidden');
+            } else {
+                devAttempts++;
+                msgBox.innerText = "❌ Errata. Tentativi: " + devAttempts;
+                msgBox.style.color = "#FF6B6B";
+                if (devAttempts === 1) hintBox.innerText = "Inizia con 'Gregs'";
+                else if (devAttempts === 2) hintBox.innerText = "'Gregs è...'";
+                else if (devAttempts === 3) hintBox.innerText = "'Gregs è il...'";
+                else if (devAttempts >= 4) hintBox.innerText = "La password è 'Gregs è il migliore'";
+            }
+        }
+        window.selectDevTime = function(minutes, ev) {
+            devChosenTime = minutes;
+            const buttons = document.querySelectorAll('.time-btn');
+            buttons.forEach(b => b.classList.remove('selected'));
+            ev.target.classList.add('selected');
+            const info = document.getElementById('reward-info');
+            if (minutes === 3) info.innerText = "Ricompensa: Scudo protettivo per i primi 15s di ogni livello.";
+            if (minutes === 5) info.innerText = "Ricompensa: Vita Doppia (6 cuori base).";
+            if (minutes === 7) info.innerText = "Ricompensa: Un cuore in più (4 cuori) e munizioni iniziali doppie.";
+            if (minutes === 10) info.innerText = "Ricompensa: Tutti i poteri per 1 minuto in modalità normale.";
+        }
+        window.startDevGame = function() {
+            if (devChosenTime === 0) { document.getElementById('reward-info').innerText = "Scegli un tempo!"; return; }
+            devMode = true; devTimer = devChosenTime * 60;
+            startGame(true);
+        }
+        function startDevTimer() {
+            document.getElementById('timer-box').style.display = 'flex';
+            updateTimerDisplay();
+            if (devTimerInterval) clearInterval(devTimerInterval);
+            devTimerInterval = setInterval(() => {
+                if (gameState === 'PLAYING') {
+                    devTimer--;
+                    updateTimerDisplay();
+                    if (devTimer <= 0) { clearInterval(devTimerInterval); endGame(false, true); }
+                }
+            }, 1000);
+        }
+        function updateTimerDisplay() {
+            let m = Math.floor(devTimer / 60);
+            let s = devTimer % 60;
+            document.getElementById('timer').innerText = m + ":" + (s < 10 ? "0" : "") + s;
+        }
+
+        function initLevel(index) {
+            const level = levels[index];
+            levelWidth = level.width;
+            entities = []; projectiles = []; eProjectiles = []; particles = [];
+            cameraX = 0; screenShake = 0; spawnTimer = 0;
+            levelFlag = null; enemiesOnScreen = 0; gateOpen = false;
+            
+            // A Napoli servono 10 kill, negli altri 5
+            if (index === 7) {
+                kills = 0; killsRequired = 10; 
+            } else {
+                kills = 0; killsRequired = 5; 
+            }
+            
+            gateX = level.width - 800;
+
+            if (!devMode) {
+                if (devReward === '5min') lives = 6;
+                else if (devReward === '7min') lives = 4;
+                else lives = 3;
+                
+                if (devReward === '3min') { shieldTimer = 15; document.getElementById('shield-box').style.display = 'flex'; }
+                else { shieldTimer = 0; document.getElementById('shield-box').style.display = 'none'; }
+            }
+
+            currentPower = 'PICCANTE'; hasRutto = false; hasYogurt = false; hasPizza = false;
+
+            if (index === 7) { hasPizza = true; currentPower = 'PIZZA'; ammo = 15; }
+            else { ammo = Math.min(maxAmmo, (devReward === '7min' ? 16 : 8) + 3); }
+
+            if (!devMode && devReward === '10min' && rewardActiveTimer <= 0) {
+                hasRutto = true; hasYogurt = true; currentPower = 'YOGURT'; ammo = 99; rewardActiveTimer = 60;
+            }
+
+            entities.push({ type: 'ground', x: 0, y: 500, w: level.width, h: 100 });
+            for (let i = 0; i < level.width; i += 600) {
+                if (i > 500 && i < level.width - 1200) entities.push({ type: 'platform', x: i, y: 350 + Math.random() * 60, w: 150, h: 25 });
+            }
+            
+            // A Napoli mettiamo tante Coca-Cola per terra
+            if (index === 7) {
+                for (let i = 300; i < level.width - 500; i += 350) {
+                    entities.push({ type: 'coca', x: i, y: 280 + (Math.random() * 100 - 50), w: 30, h: 40 });
+                }
+            } else {
+                for (let i = 1800; i < level.width - 1200; i += 3000) entities.push({ type: 'coca', x: i, y: 280, w: 30, h: 40 });
+            }
+
+            if (index === 7) {
+                // SPAWN DEI 10 NEMICI FINALI
+                for (let i = 0; i < 10; i++) {
+                    let spawnX = 600 + (i * 300);
+                    let isMaranza = i % 2 === 0; // Alterna Maranza e Zanzare
+                    let enemy = { 
+                        type: isMaranza ? 'maranza' : 'zanzara', 
+                        x: spawnX, y: isMaranza ? 435 : 150, 
+                        w: isMaranza ? 45 : 50, h: isMaranza ? 65 : 50, 
+                        vx: -5, // Molto veloci
+                        hp: 15, // Molto resistenti
+                        shootTimer: Math.random() * 60
+                    };
+                    entities.push(enemy);
+                }
+            } else {
+                levelFlag = { type: 'kebabFlag', x: level.width - 300, y: 250, w: 100, h: 250 }; 
+                entities.push(levelFlag);
+            }
+
+            player.x = 150; player.y = 300; player.vx = 0; player.vy = 0; player.invulnerable = 0;
+            gameEndingTimer = 0;
+        }
+
+        const jsZone = document.getElementById('joystick-zone');
+        const jsKnob = document.getElementById('joystick-knob');
+        function handleJoyStart(e) { e.preventDefault(); joystick.active = true; handleJoyMove(e); }
+        function handleJoyMove(e) {
+            if (!joystick.active) return; e.preventDefault();
+            const touch = e.touches ? e.touches[0] : e;
+            const rect = jsZone.getBoundingClientRect();
+            let dx = touch.clientX - (rect.left + rect.width / 2);
+            let dy = touch.clientY - (rect.top + rect.height / 2);
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist > joystick.maxDist) { dx = (dx / dist) * joystick.maxDist; dy = (dy / dist) * joystick.maxDist; }
+            jsKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+            joystick.dx = dx / joystick.maxDist;
+            joystick.dy = dy / joystick.maxDist;
+        }
+        function handleJoyEnd(e) { e.preventDefault(); joystick.active = false; joystick.dx = 0; joystick.dy = 0; jsKnob.style.transform = `translate(0px, 0px)`; }
+        
+        jsZone.addEventListener('touchstart', handleJoyStart, {passive: false});
+        jsZone.addEventListener('touchmove', handleJoyMove, {passive: false});
+        jsZone.addEventListener('touchend', handleJoyEnd, {passive: false});
+        jsZone.addEventListener('mousedown', handleJoyStart);
+        window.addEventListener('mousemove', handleJoyMove);
+        window.addEventListener('mouseup', handleJoyEnd);
+
+        const bindBtn = (id, key) => {
+            const btn = document.getElementById(id);
+            btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[key] = true; }, {passive: false});
+            btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[key] = false; }, {passive: false});
+            btn.addEventListener('mousedown', () => keys[key] = true);
+            btn.addEventListener('mouseup', () => keys[key] = false);
+        };
+        bindBtn('btnJump', 'jump'); bindBtn('btnAction', 'action');
+
+        function spawnParticles(x, y, color, count, speed) {
+            for (let i = 0; i < count; i++) particles.push({ x: x, y: y, vx: (Math.random() - 0.5) * speed, vy: (Math.random() - 0.5) * speed, life: 1, color: color, size: Math.random() * 6 + 2 });
+        }
+        function takeDamage(amount) {
+            if (player.invulnerable > 0 || shieldTimer > 0) return;
+            lives -= amount; player.invulnerable = 90; screenShake = 15;
+            player.vy = -10; player.vx = player.facing === 1 ? -12 : 12; 
+            spawnParticles(player.x + 20, player.y + 30, '#FF0000', 25, 8);
+            if (lives <= 0) endGame(false);
+        }
+
+        function spawnEnemies() {
+            if (currentLevelIndex === 7 || gateOpen) return;
+            enemiesOnScreen = entities.filter(e => e.type === 'zanzara' || e.type === 'haranda' || e.type === 'maranza').length;
+            
+            let maxEnemies = 2 + Math.floor(currentLevelIndex / 2);
+            if (enemiesOnScreen >= maxEnemies) return;
+
+            spawnTimer--;
+            if (spawnTimer <= 0) {
+                spawnTimer = Math.max(40, 90 - (currentLevelIndex * 5)); 
+                let r = Math.random();
+                let type = 'zanzara';
+                if (currentLevelIndex >= 1 && r > 0.4) type = 'haranda';
+                if (r > 0.7) type = 'maranza';
+
+                let spawnX = cameraX + viewWidth + 50; 
+                let enemy = { 
+                    type: type, x: spawnX, y: type === 'zanzara' ? 200 : 430, 
+                    w: 50, h: 50, vx: -3 - (currentLevelIndex * 0.2),
+                    hp: 3 + Math.floor(currentLevelIndex/2), shootTimer: Math.random() * 100
+                };
+                if(type === 'maranza') { 
+                    enemy.hp = 5 + currentLevelIndex; enemy.w = 45; enemy.h = 65; enemy.y = 435; enemy.vx = -4 - (currentLevelIndex * 0.2);
+                }
+                entities.push(enemy);
+            }
+        }
+
+        function update() {
+            if (gameState === 'ENDING') {
+                gameEndingTimer++;
+                if (gameEndingTimer % 5 === 0) {
+                    spawnParticles(cameraX + viewWidth/2 + (Math.random()-0.5)*400, 300 + (Math.random()-0.5)*400, '#FFD700', 5, 10);
+                }
+                if (gameEndingTimer > 120) { 
+                    gameState = 'WIN';
+                    document.getElementById('win-screen').classList.remove('hidden');
+                    document.getElementById('overlay').classList.add('hidden');
+                    document.getElementById('mobile-controls').style.display = 'none';
+                    document.getElementById('hud').style.display = 'none';
+                }
+                return;
+            }
+
+            if (gameState !== 'PLAYING') return;
+            frameCount++;
+            if (screenShake > 0) screenShake--;
+            if (player.invulnerable > 0) player.invulnerable--;
+            if (player.shootCooldown > 0) player.shootCooldown--;
+
+            if (devMode) { lives = 99; if (ammo < 5) ammo = 99; }
+            if (shieldTimer > 0) { shieldTimer--; document.getElementById('shield-timer').innerText = shieldTimer; }
+            if (rewardActiveTimer > 0) {
+                rewardActiveTimer--;
+                if (rewardActiveTimer <= 0) { hasRutto = false; hasYogurt = false; currentPower = 'PICCANTE'; ammo = 8; }
+            }
+
+            spawnEnemies();
+
+            let moveX = joystick.dx + (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
+            player.vx = moveX * player.speed;
+            if (player.vx > 0.5) player.facing = 1;
+            if (player.vx < -0.5) player.facing = -1;
+
+            if (Math.abs(player.vx) > 0.5 && player.grounded) player.walkCycle += 0.2; else player.walkCycle = 0;
+
+            if (!gateOpen && player.x > gateX - 50) player.x = gateX - 50;
+            if (!gateOpen) {
+                let blockAdvance = false;
+                entities.forEach(e => { if ((e.type === 'zanzara' || e.type === 'haranda' || e.type === 'maranza') && e.x > player.x && e.x < player.x + 500) blockAdvance = true; });
+                if (blockAdvance && player.x > cameraX + viewWidth - 200) player.x = cameraX + viewWidth - 200;
+            }
+
+            if (joystick.dy < -0.5) player.aimAngle = -Math.PI / 4;
+            else if (joystick.dy > 0.5) player.aimAngle = Math.PI / 4;
+            else player.aimAngle = 0;
+
+            if (keys.jump && player.grounded) { player.vy = player.jumpPower; player.grounded = false; keys.jump = false; }
+
+            player.vy += 0.8; player.x += player.vx; player.y += player.vy;
+            if (player.x < 0) player.x = 0;
+            if (player.x > levelWidth - player.w) player.x = levelWidth - player.w;
+
+            player.grounded = false;
+            entities.filter(e => e.type === 'ground' || e.type === 'platform').forEach(p => {
+                if (player.x < p.x + p.w && player.x + player.w > p.x && player.y + player.h > p.y && player.y + player.h < p.y + p.h + player.vy) {
+                    player.y = p.y - player.h; player.vy = 0; player.grounded = true;
+                }
+            });
+
+            if (player.x > viewWidth / 2) cameraX = player.x - viewWidth / 2;
+            if (cameraX > levelWidth - viewWidth) cameraX = levelWidth - viewWidth;
+            if (cameraX < 0) cameraX = 0;
+
+            if (gateOpen && levelFlag && player.x < levelFlag.x + levelFlag.w && player.x + player.w > levelFlag.x && player.y < levelFlag.y + levelFlag.h && player.y + player.h > levelFlag.y) {
+                currentLevelIndex++;
+                if (currentLevelIndex < levels.length) initLevel(currentLevelIndex);
+                return;
+            }
+
+            entities.forEach((e, index) => {
+                if (e.x > cameraX + viewWidth) return;
+                
+                if (e.type === 'coca' && player.x < e.x + e.w && player.x + player.w > e.x && player.y < e.y + e.h && player.y + player.h > e.y) {
+                    if (!hasRutto) { hasRutto = true; currentPower = 'RUTTO'; ammo = 5; }
+                    else if (!hasYogurt) { hasYogurt = true; currentPower = 'YOGURT'; ammo = 5; }
+                    else { 
+                        // A Napoli le coca danno sia vita che munizioni
+                        if (currentLevelIndex === 7) {
+                            if (lives < 3) lives++; 
+                            ammo += 5;
+                        } else {
+                            if (lives < (devReward === '5min' ? 6 : 3)) lives++;
+                            else ammo = Math.min(maxAmmo, ammo + 5);
+                        }
+                    }
+                    spawnParticles(e.x + 15, e.y + 20, '#F1C40F', 25, 8);
+                    entities.splice(index, 1);
+                }
+
+                if ((e.type === 'zanzara' || e.type === 'haranda' || e.type === 'maranza' || e.type === 'boss') && player.x < e.x + e.w && player.x + player.w > e.x && player.y < e.y + e.h && player.y + player.h > e.y) {
+                    if (player.vy > 0 && player.y + player.h - player.vy <= e.y + 20 && e.type !== 'boss') {
+                        player.vy = player.jumpPower * 0.9; 
+                        e.hp -= (e.type === 'maranza' ? 1 : 5); 
+                        spawnParticles(e.x + 20, e.y + 10, '#FFA500', 10, 5);
+                        if (e.hp <= 0) { 
+                            entities.splice(index, 1); 
+                            if (!gateOpen) kills++; 
+                            // A Napoli i nemici droppano Coca-Cola
+                            if (currentLevelIndex === 7 && Math.random() < 0.3) {
+                                entities.push({ type: 'coca', x: e.x, y: e.y, w: 30, h: 40 });
+                            }
+                        } 
+                    } else {
+                        if (!devMode) takeDamage(1);
+                    }
+                }
+
+                if (e.type === 'zanzara') {
+                    let distToPlayer = Math.abs(e.x - player.x);
+                    if (distToPlayer < 500) { 
+                        // A Napoli sono più aggressivi
+                        let speed = currentLevelIndex === 7 ? 4.5 : 3;
+                        if (e.x > player.x) e.x -= speed; else e.x += speed; 
+                        if (e.y > player.y) e.y -= 2; else e.y += 2; 
+                    } 
+                    else { e.x += e.vx; }
+                    e.shootTimer--;
+                    if (e.shootTimer <= 0 && Math.abs(e.x - player.x) < 700) {
+                        let angle = Math.atan2(player.y - e.y, player.x - e.x);
+                        eProjectiles.push({ x: e.x, y: e.y, vx: Math.cos(angle) * 6, vy: Math.sin(angle) * 6, type: 'acid', radius: 10 });
+                        e.shootTimer = currentLevelIndex === 7 ? 60 : 120; // Sparano il doppio
+                    }
+                }
+                if (e.type === 'haranda') {
+                    e.x += e.vx; e.shootTimer--;
+                    if (e.shootTimer <= 0 && Math.abs(e.x - player.x) < 600) {
+                        eProjectiles.push({ x: e.x, y: e.y, vx: e.vx * 2, vy: 0, type: 'meat', radius: 12 });
+                        e.shootTimer = 100;
+                    }
+                }
+                if (e.type === 'maranza') { 
+                    let speed = currentLevelIndex === 7 ? 5.5 : Math.abs(e.vx);
+                    if (e.x > player.x) e.x -= speed; else e.x += speed; 
+                }
+            });
+
+            if (!gateOpen && kills >= killsRequired && currentLevelIndex !== 7) { gateOpen = true; spawnParticles(gateX, 400, '#00FF00', 60, 12); }
+
+            if (keys.action && player.shootCooldown <= 0) {
+                keys.action = false;
+                if (ammo > 0 || devMode) {
+                    if (!devMode) ammo--;
+                    player.shootCooldown = currentPower === 'PIZZA' ? 35 : 15; 
+                    let startX = player.x + (player.facing === 1 ? 40 : 0);
+                    let startY = player.y + 30;
+                    let velX = player.facing * 16, velY = 0;
+                    if (player.aimAngle === -Math.PI / 4) { velY = -12; velX = player.facing * 12; }
+                    if (player.aimAngle === Math.PI / 4) { velY = 12; velX = player.facing * 12; }
+                    projectiles.push({ x: startX, y: startY, vx: velX, vy: velY, type: currentPower, life: 100, radius: currentPower === 'PIZZA' ? 25 : 12 });
+                    spawnParticles(startX, startY, '#FFF', 4, 4);
+                }
+            }
+
+            for (let i = projectiles.length - 1; i >= 0; i--) {
+                let p = projectiles[i]; p.x += p.vx; p.y += p.vy; p.life--;
+                let hit = false;
+                entities.forEach((e, eIndex) => {
+                    if ((e.type === 'zanzara' || e.type === 'haranda' || e.type === 'maranza' || e.type === 'boss') && p.x < e.x + e.w && p.x + p.radius > e.x && p.y < e.y + e.h && p.y + p.radius > e.y) {
+                        let dmg = p.type === 'PICCANTE' ? 2 : (p.type === 'RUTTO' ? 5 : (p.type === 'YOGURT' ? 8 : 25));
+                        
+                        if (e.type === 'boss') {
+                            if (e.phaseTransition === 0 && !(e.phase === 3 && p.type !== 'PIZZA')) e.hp -= dmg;
+                        } else {
+                            e.hp -= dmg;
+                            if (e.hp <= 0) { 
+                                entities.splice(eIndex, 1); 
+                                spawnParticles(e.x + 20, e.y + 20, '#FFA500', 15, 8); 
+                                if (!gateOpen) kills++; 
+                                if (currentLevelIndex === 7 && Math.random() < 0.3) {
+                                    entities.push({ type: 'coca', x: e.x, y: e.y, w: 30, h: 40 });
+                                }
+                            }
+                        }
+                        spawnParticles(p.x, p.y, '#FFF', 8, 6); hit = true;
+                    }
+                });
+                if (hit || p.life <= 0) projectiles.splice(i, 1);
+            }
+
+            for (let i = eProjectiles.length - 1; i >= 0; i--) {
+                let p = eProjectiles[i]; p.x += p.vx; p.y += p.vy;
+                if (player.x < p.x + p.radius && player.x + player.w > p.x && player.y < p.y + p.radius && player.y + player.h > p.y) {
+                    if (!devMode) takeDamage(1); eProjectiles.splice(i, 1); continue;
+                }
+                if (p.x < cameraX - 300 || p.x > cameraX + viewWidth + 300 || p.y > 600 || p.y < -150) eProjectiles.splice(i, 1);
+            }
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let pt = particles[i]; pt.x += pt.vx; pt.y += pt.vy; pt.life -= 0.03;
+                if (pt.life <= 0) particles.splice(i, 1);
+            }
+
+            // VITTORIA A NAPOLI (Uccisi tutti i nemici)
+            if (currentLevelIndex === 7 && kills >= 10) {
+                gameState = 'ENDING'; 
+                gameEndingTimer = 0;
+                screenShake = 40;
+                spawnParticles(player.x, player.y, '#FFD700', 100, 15);
+            }
+        }
+
+        // --- DISEGNO ---
+        function drawBackground() {
+            const level = levels[currentLevelIndex];
+            let grad = ctx.createLinearGradient(0, 0, 0, 600);
+            grad.addColorStop(0, level.sky); 
+            grad.addColorStop(1, '#ffffff'); 
+            ctx.fillStyle = grad; ctx.fillRect(0, 0, viewWidth, 600);
+            
+            ctx.save();
+            ctx.translate(-cameraX * 0.3, 0);
+            for (let i = -1; i < (levelWidth / 1200) + 1; i++) {
+                let baseX = i * 1200;
+                ctx.fillStyle = "rgba(0,0,0,0.08)"; 
+                
+                if (level.bg === 'colosseo') {
+                    ctx.beginPath(); ctx.arc(baseX + 400, 500, 200, Math.PI, 0); ctx.fill(); ctx.fillRect(baseX + 200, 500, 400, 50);
+                } else if (level.bg === 'duomo') {
+                    ctx.beginPath(); ctx.arc(baseX + 600, 450, 160, Math.PI, 0); ctx.fill(); ctx.fillRect(baseX + 500, 450, 200, 100); ctx.fillRect(baseX + 900, 350, 60, 200);
+                } else if (level.bg === 'torre') {
+                    ctx.save(); ctx.translate(baseX + 600, 400); ctx.rotate(0.15);
+                    for(let j=0; j<7; j++) ctx.fillRect(0, -j*40, 80, 25); ctx.restore();
+                } else if (level.bg === 'duomo_mi') {
+                    for(let j=0; j<6; j++) ctx.fillRect(baseX + 200 + (j*120), 300 + (j%2)*60, 60, 250);
+                } else if (level.bg === 'mole') {
+                    ctx.beginPath(); ctx.arc(baseX + 500, 300, 90, Math.PI, 0); ctx.fill(); ctx.fillRect(baseX + 400, 300, 200, 200);
+                } else if (level.bg === 'canali') {
+                    ctx.fillStyle = "rgba(0,100,150,0.1)"; ctx.fillRect(baseX, 450, 1200, 150);
+                    ctx.fillStyle = "rgba(0,0,0,0.08)";
+                    for(let j=0; j<5; j++) ctx.fillRect(baseX + 80 + (j*220), 250, 100, 200);
+                } else if (level.bg === 'torri_bo') {
+                    ctx.fillRect(baseX + 250, 150, 60, 400); ctx.fillRect(baseX + 800, 300, 70, 250);
+                } else if (level.bg === 'vesuvio') {
+                    ctx.fillStyle = "rgba(100,50,0,0.2)"; ctx.beginPath(); ctx.moveTo(baseX + 150, 500); ctx.lineTo(baseX + 450, 150); ctx.lineTo(baseX + 750, 500); ctx.fill();
+                }
+            }
+            ctx.restore();
+            
+            ctx.font = '800 50px Poppins, sans-serif';
+            ctx.lineWidth = 6;
+            ctx.strokeStyle = '#FFF';
+            ctx.strokeText(levels[currentLevelIndex].name, 40, 140);
+            ctx.fillStyle = '#E91E63';
+            ctx.fillText(levels[currentLevelIndex].name, 40, 140);
+        }
+
+        function drawPlayer() {
+            if (player.invulnerable > 0 && Math.floor(frameCount / 4) % 2 === 0 && !devMode) return; 
+            ctx.save(); ctx.translate(player.x + 20, player.y + 30);
+            
+            ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.beginPath(); ctx.ellipse(0, 35, 20, 8, 0, 0, Math.PI*2); ctx.fill();
+
+            let legOffset = Math.sin(player.walkCycle) * 8;
+            if (!player.grounded) legOffset = 5; 
+
+            ctx.save(); ctx.rotate(player.aimAngle * (player.facing === 1 ? 1 : -1)); if (player.facing === -1) ctx.scale(-1, 1);
+            ctx.fillStyle = '#F1C40F'; ctx.beginPath(); ctx.roundRect(5, -10, 20, 15, 5); ctx.fill();
+            ctx.fillStyle = '#34495E'; ctx.beginPath(); ctx.roundRect(20, -15, 35, 20, 5); ctx.fill();
+            ctx.fillStyle = '#E74C3C'; ctx.beginPath(); ctx.roundRect(50, -10, 12, 10, 3); ctx.fill();
+            ctx.restore();
+
+            if (player.facing === -1) ctx.scale(-1, 1);
+            ctx.fillStyle = '#FFF'; 
+            ctx.beginPath(); ctx.roundRect(-18 + legOffset, 25, 16, 10, 5); ctx.fill(); 
+            ctx.beginPath(); ctx.roundRect(2 - legOffset, 25, 16, 10, 5); ctx.fill();
+            ctx.fillStyle = '#3498DB'; ctx.beginPath(); ctx.roundRect(-15, 10, 30, 20, 5); ctx.fill();
+            ctx.fillStyle = '#E91E63'; ctx.beginPath(); ctx.roundRect(-20, -15, 40, 30, 8); ctx.fill();
+            ctx.fillStyle = '#FFF'; ctx.font = 'bold 18px Poppins, sans-serif'; ctx.fillText("21", -10, 8);
+            ctx.fillStyle = '#F1C40F'; ctx.beginPath(); ctx.roundRect(-12, -40, 24, 25, 10); ctx.fill();
+            ctx.fillStyle = '#111'; ctx.beginPath(); ctx.roundRect(-10, -32, 20, 10, 5); ctx.fill();
+            ctx.fillStyle = '#4B3621'; ctx.beginPath(); ctx.roundRect(-12, -45, 24, 8, 4); ctx.fill();
+            ctx.restore();
+
+            if (currentPower !== 'NONE') {
+                ctx.save();
+                let auraColor = currentPower === 'PICCANTE' ? '#E74C3C' : (currentPower === 'RUTTO' ? '#FFF' : (currentPower === 'YOGURT' ? '#00FFFF' : '#F1C40F'));
+                ctx.globalAlpha = 0.3 + Math.sin(frameCount * 0.2) * 0.2;
+                ctx.fillStyle = auraColor; ctx.beginPath(); ctx.arc(player.x + 20, player.y + 30, 45, 0, Math.PI * 2); ctx.fill();
+                ctx.restore();
+            }
+
+            if (shieldTimer > 0) {
+                ctx.save();
+                ctx.strokeStyle = '#45B7D1'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(player.x + 20, player.y + 30, 50, 0, Math.PI * 2); ctx.stroke();
+                ctx.restore();
+            }
+
+            if (devMode) { ctx.fillStyle = '#2ECC71'; ctx.font = 'bold 16px Poppins, sans-serif'; ctx.fillText("DEV", player.x + 5, player.y - 45); }
+        }
+
+        function drawEntity(e) {
+            ctx.save(); ctx.translate(e.x, e.y);
+            ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 5;
+
+            if (e.type === 'ground') {
+                ctx.fillStyle = levels[currentLevelIndex].ground; ctx.beginPath(); ctx.roundRect(0, 0, e.w, e.h, 0); ctx.fill();
+                ctx.fillStyle = '#2ECC71'; ctx.beginPath(); ctx.roundRect(0, 0, e.w, 15, 0); ctx.fill();
+            } else if (e.type === 'platform') {
+                ctx.fillStyle = '#8D6E63'; ctx.beginPath(); ctx.roundRect(0, 0, e.w, e.h, 8); ctx.fill();
+                ctx.fillStyle = '#A1887F'; ctx.beginPath(); ctx.roundRect(0, 0, e.w, 8, 8); ctx.fill();
+            } else if (e.type === 'coca') {
+                ctx.fillStyle = '#E74C3C'; ctx.beginPath(); ctx.roundRect(5, 10, 20, 30, 8); ctx.fill();
+                ctx.fillStyle = '#FFF'; ctx.beginPath(); ctx.roundRect(5, 20, 20, 8, 2); ctx.fill();
+                ctx.fillStyle = '#BDC3C7'; ctx.beginPath(); ctx.roundRect(10, 0, 10, 10, 3); ctx.fill();
+            } else if (e.type === 'zanzara') {
+                ctx.shadowBlur = 0; ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.beginPath(); ctx.ellipse(10, 5, 15, 8, -0.5, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#2C3E50'; ctx.beginPath(); ctx.roundRect(10, 15, 30, 15, 8); ctx.fill();
+                ctx.fillStyle = '#E74C3C'; ctx.beginPath(); ctx.moveTo(0, 22); ctx.lineTo(10, 18); ctx.lineTo(10, 26); ctx.fill(); ctx.beginPath(); ctx.arc(35, 22, 5, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#FF0000'; ctx.beginPath(); ctx.roundRect(10, 0, e.hp * 2, 6, 3); ctx.fill();
+            } else if (e.type === 'haranda') {
+                ctx.shadowBlur = 0; ctx.fillStyle = '#D35400'; ctx.beginPath(); ctx.roundRect(0, 0, 50, 50, 10); ctx.fill();
+                ctx.fillStyle = '#FFF'; ctx.beginPath(); ctx.arc(15, 15, 6, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(35, 15, 6, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(15, 15, 3, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(35, 15, 3, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.roundRect(15, 30, 20, 6, 3); ctx.fill();
+                ctx.fillStyle = '#FF0000'; ctx.beginPath(); ctx.roundRect(0, -10, e.hp * 2, 6, 3); ctx.fill();
+            } else if (e.type === 'maranza') {
+                ctx.shadowBlur = 0; 
+                ctx.fillStyle = '#111'; ctx.beginPath(); ctx.roundRect(0, 15, 45, 50, 10); ctx.fill();
+                ctx.fillStyle = '#FFCCCC'; ctx.beginPath(); ctx.roundRect(10, 0, 25, 20, 8); ctx.fill();
+                ctx.fillStyle = '#000'; ctx.beginPath(); ctx.roundRect(12, 8, 6, 3, 1); ctx.fill(); ctx.beginPath(); ctx.roundRect(27, 8, 6, 3, 1); ctx.fill();
+                ctx.fillStyle = '#000'; ctx.beginPath(); ctx.roundRect(15, 15, 15, 3, 1); ctx.fill();
+                ctx.fillStyle = '#FFF'; ctx.font = 'bold 8px Poppins, sans-serif'; ctx.fillText("MARANZA", 5, 40);
+                ctx.fillStyle = '#FF0000'; ctx.beginPath(); ctx.roundRect(0, -10, e.hp * 2, 6, 3); ctx.fill();
+            } else if (e.type === 'kebabFlag') {
+                ctx.fillStyle = '#DDDDDD'; ctx.beginPath(); ctx.roundRect(e.w/2 - 8, 0, 16, e.h, 8); ctx.fill();
+                ctx.fillStyle = '#E74C3C'; ctx.beginPath(); ctx.roundRect(e.w/2 - 12, -15, 24, 25, 5); ctx.fill();
+                
+                ctx.fillStyle = '#FFF'; ctx.fillRect(e.w/2 + 8, 20, 70, 80);
+                ctx.fillStyle = '#000';
+                for(let i=0; i<4; i++) { 
+                    for(let j=0; j<4; j++) { 
+                        if((i+j)%2==0) ctx.fillRect(e.w/2 + 8 + (i*17.5), 20 + (j*20), 17.5, 20); 
+                    } 
+                }
+                
+                ctx.fillStyle = '#FFD700'; ctx.font = 'bold 24px Poppins, sans-serif'; ctx.strokeStyle = '#000'; ctx.lineWidth = 4;
+                ctx.strokeText("FINE", e.w/2 + 5, 140); ctx.fillText("FINE", e.w/2 + 5, 140);
+            }
+            ctx.restore();
+        }
+
+        function drawGate() {
+            if (currentLevelIndex === 7 || gateOpen) return;
+            ctx.save(); ctx.translate(gateX, 200);
+            ctx.fillStyle = 'rgba(231, 76, 60, 0.6)'; ctx.beginPath(); ctx.roundRect(0, 0, 40, 300, 15); ctx.fill();
+            ctx.fillStyle = '#FFF'; ctx.font = 'bold 20px Poppins, sans-serif'; ctx.fillText("BLOCCATO", -50, -20);
+            ctx.fillStyle = '#FFD700'; ctx.font = 'bold 18px Poppins, sans-serif'; ctx.fillText(kills + "/" + killsRequired + " KILL", -40, 5);
+            ctx.restore();
+        }
+
+        function drawProjectiles() {
+            projectiles.forEach(p => {
+                ctx.save(); ctx.translate(p.x, p.y);
+                if (p.type === 'PIZZA') { ctx.rotate(frameCount * 0.2); ctx.fillStyle = '#F1C40F'; ctx.beginPath(); ctx.arc(0, 0, 25, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = '#E74C3C'; ctx.beginPath(); ctx.roundRect(-15, -15, 30, 8, 4); ctx.fill(); ctx.fillStyle = '#2ECC71'; ctx.beginPath(); ctx.roundRect(-8, 8, 16, 8, 4); ctx.fill(); } 
+                else if (p.type === 'PICCANTE') { ctx.fillStyle = '#E74C3C'; ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = '#F1C40F'; ctx.beginPath(); ctx.arc(0, 0, 6, 0, Math.PI*2); ctx.fill(); } 
+                else if (p.type === 'RUTTO') { ctx.strokeStyle = '#FFF'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI*2); ctx.stroke(); } 
+                else if (p.type === 'YOGURT') { ctx.fillStyle = '#00FFFF'; ctx.beginPath(); ctx.roundRect(-15, -5, 30, 10, 5); ctx.fill(); }
+                ctx.restore();
+            });
+            eProjectiles.forEach(p => {
+                ctx.save(); ctx.translate(p.x, p.y);
+                if (p.type === 'acid') { ctx.fillStyle = '#2ECC71'; ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI*2); ctx.fill(); } 
+                else if (p.type === 'bigKebab') { ctx.fillStyle = '#E74C3C'; ctx.beginPath(); ctx.arc(0, 0, 20, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = '#F5DEB3'; ctx.beginPath(); ctx.roundRect(-15, -8, 30, 16, 8); ctx.fill(); } 
+                else { ctx.fillStyle = '#D35400'; ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI*2); ctx.fill(); }
+                ctx.restore();
+            });
+        }
+
+        function drawEnding() {
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.fillRect(0, 0, viewWidth, BASE_HEIGHT);
+            
+            let centerX = cameraX + viewWidth/2;
+            let centerY = 300;
+            
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            let scale = 1 + Math.sin(frameCount * 0.1) * 0.1;
+            ctx.scale(scale, scale);
+            
+            ctx.shadowColor = '#FFD700';
+            ctx.shadowBlur = 50;
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath(); ctx.arc(0, 0, 100, 0, Math.PI*2); ctx.fill(); 
+            
+            ctx.fillStyle = '#FFF';
+            ctx.beginPath(); ctx.roundRect(-60, -30, 120, 20, 10); ctx.fill(); 
+            ctx.fillStyle = '#FF4500';
+            ctx.beginPath(); ctx.roundRect(-40, 10, 80, 20, 10); ctx.fill(); 
+            
+            ctx.restore();
+            
+            ctx.fillStyle = '#FFF';
+            ctx.font = 'bold 50px Poppins, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText("HAI SALVATO L'ITALIA!", centerX, centerY - 150);
+            ctx.font = 'bold 30px Poppins, sans-serif';
+            ctx.fillText("Tutti i nemici sono stati sconfitti!", centerX, centerY + 150);
+            ctx.textAlign = 'left';
+        }
+
+        function draw() {
+            const rect = document.getElementById('game-wrapper').getBoundingClientRect();
+            if (canvas.width !== rect.width || canvas.height !== rect.height) {
+                canvas.width = rect.width; canvas.height = rect.height;
+            }
+            scaleRatio = canvas.height / BASE_HEIGHT;
+            viewWidth = canvas.width / scaleRatio;
+            ctx.setTransform(scaleRatio, 0, 0, scaleRatio, 0, 0);
+
+            ctx.clearRect(0, 0, viewWidth, BASE_HEIGHT);
+            ctx.save();
+            if (screenShake > 0) { ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake); }
+            
+            drawBackground();
+            ctx.translate(-cameraX, 0);
+            drawGate();
+            entities.forEach(e => drawEntity(e));
+            if(gameState !== 'ENDING') drawPlayer(); 
+            drawProjectiles();
+            particles.forEach(pt => {
+                ctx.globalAlpha = pt.life; ctx.fillStyle = pt.color;
+                ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI*2); ctx.fill(); 
+            });
+            ctx.globalAlpha = 1;
+            ctx.restore();
+
+            if (gameState === 'ENDING') {
+                drawEnding();
+            } else {
+                document.getElementById('lives').innerText = lives;
+                document.getElementById('weapon-name').innerText = currentPower;
+                document.getElementById('ammo').innerText = "(" + ammo + ")";
+                document.getElementById('kills').innerText = gateOpen ? "✔" : kills;
+                document.getElementById('kill-box').innerHTML = gateOpen ? '💀 <span id="kills">✔</span> APERTO' : '💀 <span id="kills">' + kills + '</span>/' + killsRequired;
+            }
+        }
+
+        function gameLoop() { update(); draw(); requestAnimationFrame(gameLoop); }
+
+        window.startGame = function(isDev = false) {
+            gameState = 'PLAYING'; devMode = isDev;
+            if (devMode) { lives = 99; ammo = 99; startDevTimer(); } 
+            else {
+                if (devReward === '5min') { lives = 6; ammo = 8; } 
+                else if (devReward === '7min') { lives = 4; ammo = 16; } 
+                else { lives = 3; ammo = 8; }
+                rewardActiveTimer = 0; if (devReward === '10min') rewardActiveTimer = 60;
+            }
+            currentLevelIndex = 0; hasRutto = false; hasYogurt = false; hasPizza = false;
+            if (!devMode) document.getElementById('timer-box').style.display = 'none';
+            if (devReward === '3min' && !devMode) document.getElementById('shield-box').style.display = 'flex'; 
+            else document.getElementById('shield-box').style.display = 'none';
+            document.getElementById('overlay').classList.add('hidden');
+            document.getElementById('win-screen').classList.add('hidden');
+            initLevel(0);
+        }
+
+        function endGame(isWin, timeUp = false) {
+            gameState = isWin ? 'WIN' : 'GAMEOVER';
+            if (devTimerInterval) clearInterval(devTimerInterval);
+            
+            if (isWin) {
+                return;
+            }
+
+            if (devMode && isWin) {
+                devReward = devChosenTime + 'min'; const rewardDiv = document.getElementById('dev-reward-active'); rewardDiv.classList.remove('hidden');
+                if (devReward === '3min') rewardDiv.innerText = "🎁 SBLOCCATO: Scudo per i primi 15s!";
+                if (devReward === '5min') rewardDiv.innerText = "🎁 SBLOCCATO: Vita Doppia (6 cuori base)!";
+                if (devReward === '7min') rewardDiv.innerText = "🎁 SBLOCCATO: 4 cuori e munizioni doppie!";
+                if (devReward === '10min') rewardDiv.innerText = "🎁 SBLOCCATO: Tutti i poteri per 1 minuto!";
+            }
+            
+            const ov = document.getElementById('overlay'); ov.classList.remove('hidden');
+            let title = 'GAME OVER'; let sub = "";
+            
+            if (timeUp) { title = "TEMPO SCADUTO!"; sub = "Hai finito i minuti a disposizione."; } 
+            else { sub = "Le zanzare e i maranza ti hanno distrutto..."; }
+            
+            ov.innerHTML = `
+                <h1 style="font-size: 45px; color:#FF0000;">${title}</h1>
+                <p>${sub}</p>
+                <button class="btn" onclick="location.reload()" style="max-width: 250px;">TORNA AL MENU</button>
+                ${devMode ? '<p style="color:#2ECC71; margin-top: 20px; font-weight:800;">Modalità Sviluppatore</p>' : ''}
+            `;
+        }
+        gameLoop();
+    </script>
+</body>
+</html>
