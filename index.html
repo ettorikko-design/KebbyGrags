@@ -20,6 +20,11 @@
     <style>
         * { box-sizing: border-box; user-select: none; -webkit-user-select: none; touch-action: none; }
         
+        :root {
+            /* Variabile principale per la dimensione dei controlli */
+            --ctrl-size: 85px; 
+        }
+
         html, body {
             margin: 0; padding: 0; width: 100%; height: 100%;
             background: #2c3e50; overflow: hidden; position: fixed;
@@ -36,57 +41,95 @@
         /* HUD */
         #hud {
             position: absolute; top: 0; left: 0; width: 100%;
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 12px 15px; font-size: 16px; font-weight: 800;
-            background: linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%);
-            z-index: 5; flex-wrap: wrap; gap: 8px; pointer-events: none;
-            padding-top: max(12px, env(safe-area-inset-top));
+            display: flex; justify-content: space-between; align-items: flex-start;
+            padding: 10px 15px; font-size: 15px; font-weight: 800;
+            z-index: 5; pointer-events: none;
+            padding-top: max(10px, env(safe-area-inset-top));
         }
+        
+        .hud-left { display: flex; flex-wrap: wrap; gap: 5px; }
+        .hud-right { display: flex; gap: 5px; pointer-events: auto; }
+        
         .hud-box { 
-            background: rgba(0,0,0,0.6); padding: 6px 12px; 
+            background: rgba(0,0,0,0.6); padding: 5px 10px; 
             border-radius: 20px; border: 2px solid rgba(255,255,255,0.4);
-            display: flex; align-items: center; gap: 8px; text-shadow: 1px 1px 0 #000;
+            display: flex; align-items: center; gap: 5px; text-shadow: 1px 1px 0 #000;
         }
         #weapon-box { color: #FFD700; border-color: rgba(255, 215, 0, 0.6); }
         #kill-box { color: #FF6B6B; border-color: rgba(255, 107, 107, 0.6); }
         #timer-box { color: #00FFCC; border-color: rgba(0, 255, 204, 0.6); display: none; }
         #shield-box { color: #45B7D1; border-color: rgba(69, 183, 209, 0.6); display: none; }
 
-        /* Controlli Touch Ingranditi */
+        .icon-btn {
+            background: rgba(0,0,0,0.6); border: 2px solid #FFF; color: #FFF;
+            width: 40px; height: 40px; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 20px; cursor: pointer; transition: 0.1s;
+        }
+        .icon-btn:active { transform: scale(0.9); }
+
+        /* Controlli Touch (Variabili CSS per dimensione) */
         #mobile-controls {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; z-index: 4;
-            padding-bottom: max(25px, env(safe-area-inset-bottom)); 
         }
         
         #joystick-zone {
-            position: absolute; bottom: 25px; left: 25px;
-            width: 140px; height: 140px; border-radius: 50%;
-            background: rgba(255,255,255,0.2); border: 4px solid rgba(255,255,255,0.5);
+            position: absolute; left: 20px; bottom: 20px;
+            width: var(--ctrl-size); height: var(--ctrl-size); 
+            border-radius: 50%;
+            background: rgba(255,255,255,0.15); border: 3px solid rgba(255,255,255,0.4);
             display: flex; justify-content: center; align-items: center;
             pointer-events: auto; backdrop-filter: blur(4px);
+            transition: width 0.2s, height 0.2s; /* Transizione fluida quando cambi dimensione */
         }
         #joystick-knob {
-            width: 65px; height: 65px; border-radius: 50%;
-            background: linear-gradient(135deg, #fff, #ddd);
+            width: calc(var(--ctrl-size) * 0.45); height: calc(var(--ctrl-size) * 0.45); 
+            border-radius: 50%; background: linear-gradient(135deg, #fff, #ddd);
             box-shadow: 0 4px 10px rgba(0,0,0,0.5); position: absolute;
+            transition: width 0.2s, height 0.2s;
         }
         
         .action-buttons { 
-            position: absolute; bottom: 25px; right: 25px;
-            display: flex; gap: 20px; align-items: flex-end;
+            position: absolute; right: 20px; bottom: 20px;
+            display: flex; gap: 10px; align-items: flex-end;
             pointer-events: auto;
         }
         .ctrl-btn {
-            width: 90px; height: 90px; font-size: 16px; font-family: 'Poppins', sans-serif; font-weight: 800;
-            border-radius: 50%; border: 4px solid #fff; 
-            color: white; display: flex; justify-content: center; align-items: center;
-            box-shadow: 0 6px 15px rgba(0,0,0,0.4); transition: 0.1s;
-            text-shadow: 2px 2px 0 #000;
+            width: var(--ctrl-size); height: var(--ctrl-size); 
+            font-size: calc(var(--ctrl-size) * 0.18); 
+            font-family: 'Poppins', sans-serif; font-weight: 800;
+            border-radius: 50%; border: 3px solid #fff; color: white; 
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4); transition: transform 0.1s, width 0.2s, height 0.2s, font-size 0.2s;
+            text-shadow: 1px 1px 0 #000;
         }
         .ctrl-btn:active { transform: scale(0.85); }
         .ctrl-btn.jump { background: #3498DB; }
-        .ctrl-btn.action { background: #E74C3C; width: 115px; height: 90px; border-radius: 25px; font-size: 20px; }
+        .ctrl-btn.action { 
+            background: #E74C3C; width: calc(var(--ctrl-size) * 1.3); 
+            border-radius: calc(var(--ctrl-size) * 0.25); 
+        }
+
+        /* Modalità Sposta (Trascina) */
+        body.move-mode #mobile-controls > div { 
+            border: 4px dashed #FFD700 !important; 
+            cursor: grab;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.8) !important;
+            z-index: 9999 !important;
+            background: rgba(0,0,0,0.5) !important; /* Sfondo scuro per farli vedere meglio mentre li sposti */
+        }
+        body.move-mode #mobile-controls > div:active { cursor: grabbing; }
+        body.move-mode #mobile-controls * { pointer-events: none; } 
+        body.move-mode #mobile-controls > div { pointer-events: auto; }
+
+        #move-save-bar {
+            position: absolute; top: 60px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.9); padding: 10px 20px; border-radius: 20px;
+            border: 2px solid #FFD700; z-index: 99999; display: none;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8); text-align: center;
+        }
+        body.move-mode #move-save-bar { display: block; }
 
         /* Overlay e Menu */
         #overlay {
@@ -95,87 +138,60 @@
             display: flex; flex-direction: column; justify-content: center; align-items: center; 
             z-index: 10; text-align: center; overflow-y: auto; padding: 20px;
         }
-        #overlay h1 { font-size: 55px; margin: 0 0 5px 0; font-weight: 800; color: #FFD93D; text-shadow: 3px 3px 0 #C0392B, 0 0 20px rgba(255,217,61,0.5); letter-spacing: 2px; animation: floatText 3s infinite ease-in-out; }
-        @keyframes floatText { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-        #overlay p { font-size: 18px; color: #eee; margin: 5px; font-weight: 600; }
+        #overlay h1 { font-size: 50px; margin: 0 0 5px 0; font-weight: 800; color: #FFD93D; text-shadow: 3px 3px 0 #C0392B, 0 0 20px rgba(255,217,61,0.5); letter-spacing: 2px; }
+        #overlay p { font-size: 16px; color: #eee; margin: 5px; font-weight: 600; }
         
         .menu-card {
             background: rgba(255, 255, 255, 0.1); border: 2px solid rgba(255,255,255,0.2);
-            border-radius: 20px; padding: 25px; width: 100%; max-width: 400px;
+            border-radius: 20px; padding: 20px; width: 100%; max-width: 380px;
             display: flex; flex-direction: column; align-items: center;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.4); margin-top: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4); margin-top: 15px;
         }
 
         .btn {
-            padding: 15px 20px; font-size: 18px; font-family: 'Poppins', sans-serif; font-weight: 800;
-            background: #E91E63; color: #fff;
-            border: 2px solid #fff; border-radius: 12px; cursor: pointer; margin: 8px 0; 
+            padding: 12px 20px; font-size: 16px; font-family: 'Poppins', sans-serif; font-weight: 800;
+            background: #E91E63; color: #fff; border: 2px solid #fff; border-radius: 12px; cursor: pointer; margin: 6px 0; 
             width: 100%; max-width: 280px; text-transform: uppercase;
-            box-shadow: 0 6px 0 #880E4F; transition: all 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            transform-origin: center;
+            box-shadow: 0 6px 0 #880E4F; transition: all 0.1s;
         }
-        .btn:hover { transform: scale(1.05); box-shadow: 0 8px 0 #880E4F; }
         .btn:active { transform: scale(0.95) translateY(4px); box-shadow: 0 2px 0 #880E4F; }
-        
         .btn-secondary { background: #7F8C8D; box-shadow: 0 6px 0 #2C3E50; }
         .btn-secondary:active { box-shadow: 0 2px 0 #2C3E50; }
-        .btn-dev { background: #27AE60; box-shadow: 0 6px 0 #145A32; font-size: 14px; padding: 12px 20px; }
-        .btn-dev:active { box-shadow: 0 2px 0 #145A32; }
+        .btn-dev { background: #27AE60; box-shadow: 0 6px 0 #145A32; font-size: 13px; padding: 10px 20px; }
 
         #overlay input {
-            padding: 15px; font-size: 16px; font-family: 'Poppins', sans-serif; font-weight: 600;
-            background: rgba(0,0,0,0.4); color: #FFF;
-            border: 2px solid rgba(255,255,255,0.3); border-radius: 10px;
+            padding: 12px; font-size: 16px; font-family: 'Poppins', sans-serif; font-weight: 600;
+            background: rgba(0,0,0,0.4); color: #FFF; border: 2px solid rgba(255,255,255,0.3); border-radius: 10px;
             width: 100%; max-width: 280px; margin: 10px 0;
         }
 
-        #hint-text { color: #FFD93D; font-size: 14px; margin-top: 10px; font-weight: 600; }
-        #message-box { color: #FFF; font-size: 14px; margin: 5px 0; padding: 5px; font-weight: 600; }
-        
-        .time-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 280px; margin-top: 15px; }
-        .time-btn { padding: 12px; font-size: 16px; font-family: 'Poppins', sans-serif; font-weight: 800; background: rgba(0,0,0,0.3); color: #FFF; border: 2px solid rgba(255,255,255,0.3); border-radius: 10px; cursor: pointer; transition: 0.1s; }
-        .time-btn:hover { transform: scale(1.05); }
-        .time-btn:active { transform: scale(0.95); }
+        .time-options { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; width: 100%; max-width: 280px; margin-top: 10px; }
+        .time-btn { padding: 10px; font-size: 14px; font-family: 'Poppins', sans-serif; font-weight: 800; background: rgba(0,0,0,0.3); color: #FFF; border: 2px solid rgba(255,255,255,0.3); border-radius: 10px; cursor: pointer; transition: 0.1s; }
         .time-btn.selected { background: #3498DB; border-color: #FFF; box-shadow: 0 0 15px #3498DB; }
         
-        #reward-info { margin-top: 15px; font-size: 14px; color: #00FFCC; min-height: 40px; font-weight: 600; }
+        #reward-info { margin-top: 15px; font-size: 13px; color: #00FFCC; min-height: 40px; font-weight: 600; }
         .hidden { display: none !important; }
 
-        /* Schermata Finale (Vittoria) */
+        /* Schermata Finale */
         #win-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: radial-gradient(circle, rgba(255,215,0,0.9) 0%, rgba(0,0,0,0.95) 100%);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             z-index: 20; text-align: center; padding: 20px;
         }
-        #win-screen h1 { font-size: 60px; font-weight: 800; color: #FFF; text-shadow: 0 0 20px #FFD700, 4px 4px 0 #000; animation: popIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) both; }
-        @keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+        #win-screen h1 { font-size: 60px; font-weight: 800; color: #FFF; text-shadow: 0 0 20px #FFD700, 4px 4px 0 #000; }
         #win-screen p { font-size: 24px; color: #FFF; font-weight: 600; text-shadow: 2px 2px 0 #000; margin-bottom: 30px; }
 
         #rotate-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: #2c3e50; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px;
         }
-        #rotate-overlay .icon { font-size: 70px; margin-bottom: 15px; animation: rotateAnim 2s infinite ease-in-out; }
-        @keyframes rotateAnim { 0% { transform: rotate(0deg); } 50% { transform: rotate(90deg); } 100% { transform: rotate(0deg); } }
-
-        @media (max-width: 600px) {
-            #overlay h1 { font-size: 45px; }
-            #joystick-zone { width: 110px; height: 110px; bottom: 15px; left: 15px; }
-            #joystick-knob { width: 50px; height: 50px; }
-            .action-buttons { bottom: 15px; right: 15px; gap: 10px; }
-            .ctrl-btn { width: 75px; height: 75px; font-size: 13px; }
-            .ctrl-btn.action { width: 95px; height: 75px; font-size: 16px; }
-            #hud { padding: 8px 10px; font-size: 13px; }
-            .hud-box { padding: 4px 8px; }
-            #win-screen h1 { font-size: 40px; }
-        }
     </style>
 </head>
 <body>
 
     <div id="rotate-overlay">
-        <div class="icon">📱</div>
+        <div class="icon" style="font-size:70px; margin-bottom:15px;">📱</div>
         <h2 style="color: #FFD700; font-size: 24px; margin-bottom: 10px;">Ruota il telefono!</h2>
         <p style="color: #fff; max-width: 300px; font-size: 16px; font-weight:600;">Per giocare al meglio, ruota lo schermo in orizzontale.</p>
         <button class="btn" style="max-width: 200px; margin-top: 20px;" onclick="document.getElementById('rotate-overlay').style.display='none'">HO CAPITO</button>
@@ -185,11 +201,23 @@
         <canvas id="gameCanvas"></canvas>
 
         <div id="hud">
-            <div class="hud-box">❤️ <span id="lives">3</span></div>
-            <div class="hud-box" id="weapon-box">🔫 <span id="weapon-name">PICCANTE</span> <span id="ammo">(8)</span></div>
-            <div class="hud-box" id="kill-box">💀 <span id="kills">0</span>/5</div>
-            <div class="hud-box" id="timer-box">⏱️ <span id="timer">3:00</span></div>
-            <div class="hud-box" id="shield-box">🛡️ <span id="shield-timer">15</span>s</div>
+            <div class="hud-left">
+                <div class="hud-box">❤️ <span id="lives">3</span></div>
+                <div class="hud-box" id="weapon-box">🔫 <span id="weapon-name">PICCANTE</span> <span id="ammo">(8)</span></div>
+                <div class="hud-box" id="kill-box">💀 <span id="kills">0</span>/5</div>
+                <div class="hud-box" id="timer-box">⏱️ <span id="timer">3:00</span></div>
+                <div class="hud-box" id="shield-box">🛡️ <span id="shield-timer">15</span>s</div>
+            </div>
+            <div class="hud-right">
+                <div class="icon-btn" onclick="togglePause()" id="pause-btn">⏸️</div>
+                <div class="icon-btn" onclick="openSettingsFromGame()">⚙️</div>
+            </div>
+        </div>
+
+        <!-- Barra di salvataggio per lo sposta controlli -->
+        <div id="move-save-bar">
+            <p style="margin: 0 0 10px 0; color: #FFD700; font-size: 14px;">Trascina i controlli dove vuoi!</p>
+            <button class="btn" style="padding: 8px 15px; font-size: 14px; box-shadow: none; background:#27AE60;" onclick="toggleMoveMode()">SALVA POSIZIONE</button>
         </div>
 
         <div id="mobile-controls">
@@ -202,28 +230,56 @@
             </div>
         </div>
 
+        <!-- OVERLAY PRINCIPALE (MENU / PAUSA / IMPOSTAZIONI) -->
         <div id="overlay">
-            <h1>GREGS</h1>
-            <p>Il Ritorno del Kebab</p>
+            <h1 id="overlay-title">GREGS</h1>
+            <p id="overlay-sub">Il Ritorno del Kebab</p>
             
+            <!-- MENU INIZIALE -->
             <div id="menu-content" class="menu-card">
                 <button class="btn" onclick="startGame(false)">GIOCA ORA</button>
-                <button class="btn btn-dev" onclick="showDevMenu()" style="margin-top: 15px;">MODALITÀ SVILUPPATORE</button>
-                <div id="dev-reward-active" class="hidden" style="margin-top:15px; color:#00FFCC; font-weight:800; font-size: 14px; text-shadow: 1px 1px 0 #000;"></div>
+                <button class="btn btn-secondary" onclick="openSettingsMenu()" style="margin-top: 5px;">⚙️ IMPOSTAZIONI</button>
+                <button class="btn btn-dev" onclick="showDevMenu()" style="margin-top: 5px;">MODALITÀ SVILUPPATORE</button>
             </div>
 
+            <!-- MENU PAUSA -->
+            <div id="pause-content" class="menu-card hidden">
+                <button class="btn" onclick="togglePause()">RIPRENDI</button>
+                <button class="btn btn-secondary" onclick="openSettingsMenu()">⚙️ IMPOSTAZIONI</button>
+                <button class="btn btn-secondary" onclick="location.reload()">TORNA AL MENU</button>
+            </div>
+
+            <!-- MENU IMPOSTAZIONI -->
+            <div id="settings-content" class="menu-card hidden">
+                <p style="color: #3498DB; font-size: 18px; font-weight: 800;">Impostazioni</p>
+                
+                <p style="margin-top: 10px; font-size: 14px;">Dimensione Controlli:</p>
+                <div class="time-options">
+                    <button class="time-btn" onclick="setCtrlSize('small', event)">Piccoli</button>
+                    <button class="time-btn selected" onclick="setCtrlSize('medium', event)">Normali</button>
+                    <button class="time-btn" onclick="setCtrlSize('large', event)">Grandi</button>
+                </div>
+
+                <p style="margin-top: 15px; font-size: 14px;">Posizione Controlli:</p>
+                <button class="btn btn-secondary" onclick="toggleMoveMode()" id="move-mode-btn">Sposta Controlli</button>
+                <p style="font-size: 12px; color: #ccc; margin-top: 5px;">Attiva questa modalità per trascinare i tasti dove preferisci.</p>
+
+                <button class="btn" style="margin-top: 20px;" onclick="closeSettings()">SALVA E TORNA</button>
+            </div>
+
+            <!-- MENU SVILUPPATORE -->
             <div id="dev-content" class="menu-card hidden">
                 <p style="color: #00FFCC; font-size: 20px; font-weight: 800;">Area Riservata</p>
                 <input type="password" id="dev-password" placeholder="Password..." onkeydown="if(event.key==='Enter') checkDevPassword()">
-                <div id="message-box"></div>
-                <div id="hint-text"></div>
+                <div id="message-box" style="color:#FF6B6B; font-weight:600; font-size:14px; min-height:20px;"></div>
+                <div id="hint-text" style="color:#FFD93D; font-weight:600; font-size:14px;"></div>
                 <button class="btn" onclick="checkDevPassword()">ACCEDI</button>
                 <button class="btn btn-secondary" onclick="hideDevMenu()">ANNULLA</button>
             </div>
             
             <div id="dev-time-menu" class="menu-card hidden">
                 <p style="color: #00FFCC; font-size: 20px; font-weight: 800;">Scegli la sfida</p>
-                <div class="time-options">
+                <div class="time-options" style="grid-template-columns: 1fr 1fr;">
                     <button class="time-btn" onclick="selectDevTime(3, event)">3 MIN</button>
                     <button class="time-btn" onclick="selectDevTime(5, event)">5 MIN</button>
                     <button class="time-btn" onclick="selectDevTime(7, event)">7 MIN</button>
@@ -235,7 +291,7 @@
             </div>
         </div>
 
-        <!-- SCHERMATA FINALE A TUTTO SCHERMO -->
+        <!-- SCHERMATA FINALE -->
         <div id="win-screen" class="hidden">
             <h1>COMPLIMENTI!</h1>
             <p>Hai sconfitto tutti i nemici e salvato l'Italia!</p>
@@ -254,6 +310,165 @@
         });
         if (window.innerWidth > window.innerHeight) document.getElementById('rotate-overlay').style.display = 'none';
 
+        // --- GESTIONE IMPOSTAZIONI E DRAG & DROP ---
+        const ctrlSizes = { small: '65px', medium: '90px', large: '120px' };
+        let isMoveMode = false;
+        let isPaused = false;
+
+        function setCtrlSize(size, ev) {
+            // L'aggiornamento della variabile CSS avviene sulla radice (documentElement)
+            document.documentElement.style.setProperty('--ctrl-size', ctrlSizes[size]);
+            
+            // Aggiorna l'aspetto dei bottoni nel menu
+            document.querySelectorAll('#settings-content .time-btn').forEach(b => b.classList.remove('selected'));
+            if(ev) ev.target.classList.add('selected');
+            
+            localStorage.setItem('gregs_ctrl_size', size);
+        }
+
+        function openSettingsMenu() {
+            document.getElementById('menu-content').classList.add('hidden');
+            document.getElementById('pause-content').classList.add('hidden');
+            document.getElementById('settings-content').classList.remove('hidden');
+            document.getElementById('overlay-title').style.display = 'none';
+            document.getElementById('overlay-sub').style.display = 'none';
+            document.getElementById('overlay').classList.remove('hidden');
+            if (gameState === 'PLAYING') isPaused = true;
+        }
+
+        function openSettingsFromGame() {
+            openSettingsMenu();
+        }
+
+        function closeSettings() {
+            if (isMoveMode) toggleMoveMode(); // Forza l'uscita dalla modalità sposta
+            document.getElementById('settings-content').classList.add('hidden');
+            
+            if (gameState === 'PLAYING') {
+                document.getElementById('pause-content').classList.remove('hidden');
+            } else {
+                document.getElementById('menu-content').classList.remove('hidden');
+                document.getElementById('overlay-title').style.display = 'block';
+                document.getElementById('overlay-sub').style.display = 'block';
+                document.getElementById('overlay').classList.add('hidden');
+            }
+        }
+
+        function toggleMoveMode() {
+            isMoveMode = !isMoveMode;
+            
+            if (isMoveMode) {
+                document.body.classList.add('move-mode');
+                // Nasconde il menu per mostrare l'area di gioco e i controlli
+                document.getElementById('overlay').classList.add('hidden'); 
+                isPaused = true; // Mette in pausa il gioco
+                setupDragAndDrop();
+            } else {
+                document.body.classList.remove('move-mode');
+                // Torna al menu delle impostazioni
+                document.getElementById('overlay').classList.remove('hidden');
+                document.getElementById('settings-content').classList.remove('hidden');
+            }
+        }
+
+        function setupDragAndDrop() {
+            const joyZone = document.getElementById('joystick-zone');
+            const actButtons = document.querySelector('.action-buttons');
+            makeDraggable(joyZone, 'joy');
+            makeDraggable(actButtons, 'act');
+        }
+
+        function makeDraggable(elmnt, type) {
+            let startX = 0, startY = 0, initialLeft = 0, initialTop = 0;
+            
+            const onDragStart = (e) => {
+                if (!isMoveMode) return;
+                e.preventDefault();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                
+                startX = clientX;
+                startY = clientY;
+                
+                const rect = elmnt.getBoundingClientRect();
+                initialLeft = rect.left;
+                initialTop = rect.top;
+                
+                elmnt.style.left = initialLeft + 'px';
+                elmnt.style.top = initialTop + 'px';
+                elmnt.style.bottom = 'auto';
+                elmnt.style.right = 'auto';
+                elmnt.style.margin = '0';
+
+                document.addEventListener('mousemove', onDragMove);
+                document.addEventListener('touchmove', onDragMove, {passive: false});
+                document.addEventListener('mouseup', onDragEnd);
+                document.addEventListener('touchend', onDragEnd);
+            };
+
+            const onDragMove = (e) => {
+                if (!isMoveMode) return;
+                e.preventDefault();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                
+                const dx = clientX - startX;
+                const dy = clientY - startY;
+                
+                let newLeft = initialLeft + dx;
+                let newTop = initialTop + dy;
+
+                newLeft = Math.max(5, Math.min(newLeft, window.innerWidth - elmnt.offsetWidth - 5));
+                newTop = Math.max(50, Math.min(newTop, window.innerHeight - elmnt.offsetHeight - 5));
+
+                elmnt.style.left = newLeft + 'px';
+                elmnt.style.top = newTop + 'px';
+            };
+
+            const onDragEnd = () => {
+                document.removeEventListener('mousemove', onDragMove);
+                document.removeEventListener('touchmove', onDragMove);
+                document.removeEventListener('mouseup', onDragEnd);
+                document.removeEventListener('touchend', onDragEnd);
+                
+                // Salva posizione
+                if (type === 'joy') {
+                    localStorage.setItem('gregs_joy_left', elmnt.style.left);
+                    localStorage.setItem('gregs_joy_top', elmnt.style.top);
+                } else {
+                    localStorage.setItem('gregs_act_left', elmnt.style.left);
+                    localStorage.setItem('gregs_act_top', elmnt.style.top);
+                }
+            };
+
+            elmnt.addEventListener('mousedown', onDragStart);
+            elmnt.addEventListener('touchstart', onDragStart, {passive: false});
+        }
+
+        window.onload = function() {
+            // Carica dimensione
+            const savedSize = localStorage.getItem('gregs_ctrl_size') || 'medium';
+            setCtrlSize(savedSize, null);
+            
+            // Carica posizioni
+            const joyLeft = localStorage.getItem('gregs_joy_left');
+            const joyTop = localStorage.getItem('gregs_joy_top');
+            if (joyLeft && joyTop) {
+                const el = document.getElementById('joystick-zone');
+                el.style.left = joyLeft; el.style.top = joyTop; 
+                el.style.bottom = 'auto'; el.style.right = 'auto';
+            }
+            
+            const actLeft = localStorage.getItem('gregs_act_left');
+            const actTop = localStorage.getItem('gregs_act_top');
+            if (actLeft && actTop) {
+                const el = document.querySelector('.action-buttons');
+                el.style.left = actLeft; el.style.top = actTop; 
+                el.style.bottom = 'auto'; el.style.right = 'auto';
+            }
+        }
+
+        // --- LOGICA DEL GIOCO ---
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
@@ -268,7 +483,7 @@
         
         let kills = 0, killsRequired = 5; 
 
-        let joystick = { active: false, dx: 0, dy: 0, maxDist: 45 };
+        let joystick = { active: false, dx: 0, dy: 0, maxDist: 35 };
         const keys = { left: false, right: false, jump: false, action: false };
 
         const BASE_HEIGHT = 600; 
@@ -300,19 +515,36 @@
         let devAttempts = 0;
         const correctPassword = "Gregs è il migliore";
 
-        window.showDevMenu = function() {
+        function togglePause() {
+            if (gameState !== 'PLAYING') return;
+            isPaused = !isPaused;
+            document.getElementById('pause-btn').innerText = isPaused ? "▶️" : "⏸️";
+            
+            if (isPaused) {
+                document.getElementById('overlay').classList.remove('hidden');
+                document.getElementById('menu-content').classList.add('hidden');
+                document.getElementById('settings-content').classList.add('hidden');
+                document.getElementById('pause-content').classList.remove('hidden');
+                document.getElementById('overlay-title').style.display = 'none';
+                document.getElementById('overlay-sub').style.display = 'none';
+            } else {
+                document.getElementById('overlay').classList.add('hidden');
+            }
+        }
+
+        function showDevMenu() {
             document.getElementById('menu-content').classList.add('hidden');
             document.getElementById('dev-content').classList.remove('hidden');
             document.getElementById('dev-password').value = '';
             document.getElementById('message-box').innerText = '';
             document.getElementById('hint-text').innerText = '';
         }
-        window.hideDevMenu = function() {
+        function hideDevMenu() {
             document.getElementById('dev-content').classList.add('hidden');
             document.getElementById('dev-time-menu').classList.add('hidden');
             document.getElementById('menu-content').classList.remove('hidden');
         }
-        window.checkDevPassword = function() {
+        function checkDevPassword() {
             const pwd = document.getElementById('dev-password').value.trim();
             const msgBox = document.getElementById('message-box');
             const hintBox = document.getElementById('hint-text');
@@ -322,25 +554,24 @@
             } else {
                 devAttempts++;
                 msgBox.innerText = "❌ Errata. Tentativi: " + devAttempts;
-                msgBox.style.color = "#FF6B6B";
                 if (devAttempts === 1) hintBox.innerText = "Inizia con 'Gregs'";
                 else if (devAttempts === 2) hintBox.innerText = "'Gregs è...'";
                 else if (devAttempts === 3) hintBox.innerText = "'Gregs è il...'";
                 else if (devAttempts >= 4) hintBox.innerText = "La password è 'Gregs è il migliore'";
             }
         }
-        window.selectDevTime = function(minutes, ev) {
+        function selectDevTime(minutes, ev) {
             devChosenTime = minutes;
-            const buttons = document.querySelectorAll('.time-btn');
+            const buttons = document.querySelectorAll('#dev-time-menu .time-btn');
             buttons.forEach(b => b.classList.remove('selected'));
             ev.target.classList.add('selected');
             const info = document.getElementById('reward-info');
             if (minutes === 3) info.innerText = "Ricompensa: Scudo protettivo per i primi 15s di ogni livello.";
             if (minutes === 5) info.innerText = "Ricompensa: Vita Doppia (6 cuori base).";
-            if (minutes === 7) info.innerText = "Ricompensa: Un cuore in più (4 cuori) e munizioni iniziali doppie.";
-            if (minutes === 10) info.innerText = "Ricompensa: Tutti i poteri per 1 minuto in modalità normale.";
+            if (minutes === 7) info.innerText = "Ricompensa: 4 cuori e munizioni doppie.";
+            if (minutes === 10) info.innerText = "Ricompensa: Tutti i poteri per 1 minuto.";
         }
-        window.startDevGame = function() {
+        function startDevGame() {
             if (devChosenTime === 0) { document.getElementById('reward-info').innerText = "Scegli un tempo!"; return; }
             devMode = true; devTimer = devChosenTime * 60;
             startGame(true);
@@ -350,7 +581,7 @@
             updateTimerDisplay();
             if (devTimerInterval) clearInterval(devTimerInterval);
             devTimerInterval = setInterval(() => {
-                if (gameState === 'PLAYING') {
+                if (gameState === 'PLAYING' && !isPaused) {
                     devTimer--;
                     updateTimerDisplay();
                     if (devTimer <= 0) { clearInterval(devTimerInterval); endGame(false, true); }
@@ -370,12 +601,8 @@
             cameraX = 0; screenShake = 0; spawnTimer = 0;
             levelFlag = null; enemiesOnScreen = 0; gateOpen = false;
             
-            // A Napoli servono 10 kill, negli altri 5
-            if (index === 7) {
-                kills = 0; killsRequired = 10; 
-            } else {
-                kills = 0; killsRequired = 5; 
-            }
+            if (index === 7) { kills = 0; killsRequired = 10; } 
+            else { kills = 0; killsRequired = 5; }
             
             gateX = level.width - 800;
 
@@ -402,7 +629,6 @@
                 if (i > 500 && i < level.width - 1200) entities.push({ type: 'platform', x: i, y: 350 + Math.random() * 60, w: 150, h: 25 });
             }
             
-            // A Napoli mettiamo tante Coca-Cola per terra
             if (index === 7) {
                 for (let i = 300; i < level.width - 500; i += 350) {
                     entities.push({ type: 'coca', x: i, y: 280 + (Math.random() * 100 - 50), w: 30, h: 40 });
@@ -412,19 +638,15 @@
             }
 
             if (index === 7) {
-                // SPAWN DEI 10 NEMICI FINALI
                 for (let i = 0; i < 10; i++) {
                     let spawnX = 600 + (i * 300);
-                    let isMaranza = i % 2 === 0; // Alterna Maranza e Zanzare
-                    let enemy = { 
+                    let isMaranza = i % 2 === 0;
+                    entities.push({ 
                         type: isMaranza ? 'maranza' : 'zanzara', 
                         x: spawnX, y: isMaranza ? 435 : 150, 
                         w: isMaranza ? 45 : 50, h: isMaranza ? 65 : 50, 
-                        vx: -5, // Molto veloci
-                        hp: 15, // Molto resistenti
-                        shootTimer: Math.random() * 60
-                    };
-                    entities.push(enemy);
+                        vx: -5, hp: 15, shootTimer: Math.random() * 60
+                    });
                 }
             } else {
                 levelFlag = { type: 'kebabFlag', x: level.width - 300, y: 250, w: 100, h: 250 }; 
@@ -437,9 +659,12 @@
 
         const jsZone = document.getElementById('joystick-zone');
         const jsKnob = document.getElementById('joystick-knob');
-        function handleJoyStart(e) { e.preventDefault(); joystick.active = true; handleJoyMove(e); }
+        function handleJoyStart(e) { 
+            if (isMoveMode || isPaused || gameState !== 'PLAYING') return;
+            e.preventDefault(); joystick.active = true; handleJoyMove(e); 
+        }
         function handleJoyMove(e) {
-            if (!joystick.active) return; e.preventDefault();
+            if (!joystick.active || isMoveMode || isPaused) return; e.preventDefault();
             const touch = e.touches ? e.touches[0] : e;
             const rect = jsZone.getBoundingClientRect();
             let dx = touch.clientX - (rect.left + rect.width / 2);
@@ -461,12 +686,33 @@
 
         const bindBtn = (id, key) => {
             const btn = document.getElementById(id);
-            btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[key] = true; }, {passive: false});
+            btn.addEventListener('touchstart', (e) => { 
+                e.preventDefault(); 
+                if(!isMoveMode && !isPaused && gameState === 'PLAYING') keys[key] = true; 
+            }, {passive: false});
             btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[key] = false; }, {passive: false});
-            btn.addEventListener('mousedown', () => keys[key] = true);
+            btn.addEventListener('mousedown', () => { 
+                if(!isMoveMode && !isPaused && gameState === 'PLAYING') keys[key] = true; 
+            });
             btn.addEventListener('mouseup', () => keys[key] = false);
         };
         bindBtn('btnJump', 'jump'); bindBtn('btnAction', 'action');
+
+        // TASTIERA PER PC
+        window.addEventListener('keydown', (e) => {
+            if (gameState !== 'PLAYING' || isPaused) return;
+            if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
+            if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
+            if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') keys.jump = true;
+            if (e.code === 'KeyJ' || e.code === 'KeyK') keys.action = true;
+            if (e.code === 'Escape') togglePause();
+        });
+        window.addEventListener('keyup', (e) => {
+            if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = false;
+            if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = false;
+            if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') keys.jump = false;
+            if (e.code === 'KeyJ' || e.code === 'KeyK') keys.action = false;
+        });
 
         function spawnParticles(x, y, color, count, speed) {
             for (let i = 0; i < count; i++) particles.push({ x: x, y: y, vx: (Math.random() - 0.5) * speed, vy: (Math.random() - 0.5) * speed, life: 1, color: color, size: Math.random() * 6 + 2 });
@@ -523,7 +769,7 @@
                 return;
             }
 
-            if (gameState !== 'PLAYING') return;
+            if (gameState !== 'PLAYING' || isPaused || isMoveMode) return;
             frameCount++;
             if (screenShake > 0) screenShake--;
             if (player.invulnerable > 0) player.invulnerable--;
@@ -586,7 +832,6 @@
                     if (!hasRutto) { hasRutto = true; currentPower = 'RUTTO'; ammo = 5; }
                     else if (!hasYogurt) { hasYogurt = true; currentPower = 'YOGURT'; ammo = 5; }
                     else { 
-                        // A Napoli le coca danno sia vita che munizioni
                         if (currentLevelIndex === 7) {
                             if (lives < 3) lives++; 
                             ammo += 5;
@@ -607,7 +852,6 @@
                         if (e.hp <= 0) { 
                             entities.splice(index, 1); 
                             if (!gateOpen) kills++; 
-                            // A Napoli i nemici droppano Coca-Cola
                             if (currentLevelIndex === 7 && Math.random() < 0.3) {
                                 entities.push({ type: 'coca', x: e.x, y: e.y, w: 30, h: 40 });
                             }
@@ -620,7 +864,6 @@
                 if (e.type === 'zanzara') {
                     let distToPlayer = Math.abs(e.x - player.x);
                     if (distToPlayer < 500) { 
-                        // A Napoli sono più aggressivi
                         let speed = currentLevelIndex === 7 ? 4.5 : 3;
                         if (e.x > player.x) e.x -= speed; else e.x += speed; 
                         if (e.y > player.y) e.y -= 2; else e.y += 2; 
@@ -630,7 +873,7 @@
                     if (e.shootTimer <= 0 && Math.abs(e.x - player.x) < 700) {
                         let angle = Math.atan2(player.y - e.y, player.x - e.x);
                         eProjectiles.push({ x: e.x, y: e.y, vx: Math.cos(angle) * 6, vy: Math.sin(angle) * 6, type: 'acid', radius: 10 });
-                        e.shootTimer = currentLevelIndex === 7 ? 60 : 120; // Sparano il doppio
+                        e.shootTimer = currentLevelIndex === 7 ? 60 : 120; 
                     }
                 }
                 if (e.type === 'haranda') {
@@ -669,18 +912,13 @@
                 entities.forEach((e, eIndex) => {
                     if ((e.type === 'zanzara' || e.type === 'haranda' || e.type === 'maranza' || e.type === 'boss') && p.x < e.x + e.w && p.x + p.radius > e.x && p.y < e.y + e.h && p.y + p.radius > e.y) {
                         let dmg = p.type === 'PICCANTE' ? 2 : (p.type === 'RUTTO' ? 5 : (p.type === 'YOGURT' ? 8 : 25));
-                        
-                        if (e.type === 'boss') {
-                            if (e.phaseTransition === 0 && !(e.phase === 3 && p.type !== 'PIZZA')) e.hp -= dmg;
-                        } else {
-                            e.hp -= dmg;
-                            if (e.hp <= 0) { 
-                                entities.splice(eIndex, 1); 
-                                spawnParticles(e.x + 20, e.y + 20, '#FFA500', 15, 8); 
-                                if (!gateOpen) kills++; 
-                                if (currentLevelIndex === 7 && Math.random() < 0.3) {
-                                    entities.push({ type: 'coca', x: e.x, y: e.y, w: 30, h: 40 });
-                                }
+                        e.hp -= dmg;
+                        if (e.hp <= 0) { 
+                            entities.splice(eIndex, 1); 
+                            spawnParticles(e.x + 20, e.y + 20, '#FFA500', 15, 8); 
+                            if (!gateOpen) kills++; 
+                            if (currentLevelIndex === 7 && Math.random() < 0.3) {
+                                entities.push({ type: 'coca', x: e.x, y: e.y, w: 30, h: 40 });
                             }
                         }
                         spawnParticles(p.x, p.y, '#FFF', 8, 6); hit = true;
@@ -702,7 +940,6 @@
                 if (pt.life <= 0) particles.splice(i, 1);
             }
 
-            // VITTORIA A NAPOLI (Uccisi tutti i nemici)
             if (currentLevelIndex === 7 && kills >= 10) {
                 gameState = 'ENDING'; 
                 gameEndingTimer = 0;
